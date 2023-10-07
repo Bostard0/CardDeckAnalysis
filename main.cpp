@@ -4,19 +4,33 @@
 #include <ctime>
 #include <cstdlib>
 #include <random>
+#include <map>
+#include <compare>
+
+class Card {
+public:
+    Card(int value) : value_(value) {}
+
+    auto operator<=>(const Card& other) const {
+        return value_ <=> other.value_;
+    }
+
+private:
+    int value_;
+};
 
 class CardDeck {
 public:
     explicit CardDeck(int numSuits) : numSuits_(numSuits), currentCardIndex_(0) {
         for (int i = 0; i < numSuits_; ++i) {
             for (int j = 1; j <= 13; ++j) {
-                deck_.push_back(j);
+                deck_.emplace_back(j);
             }
         }
         shuffleDeck();
     }
 
-    int operator()() {
+    Card operator()() {
         if (currentCardIndex_ >= deck_.size()) {
             shuffleDeck();
             currentCardIndex_ = 0;
@@ -24,51 +38,27 @@ public:
         return deck_[currentCardIndex_++];
     }
 
-    // Метод для визначення, чи є карта старшою за попередню
-    bool isCardHigher(int currentCard, int previousCard) {
-        return currentCard > previousCard;
-    }
-
-    // Метод для гри за вказаним правилом
-    void playGame(int numCards) {
-        std::vector<int> stack;
-        int previousCard = 0;
+    // Метод для гри за вказаним правилом та зберігання стопок
+    void playGame(int numCards, std::vector<std::vector<Card>>& stacks) {
+        Card previousCard(0);
 
         for (int i = 0; i < numCards; ++i) {
-            int currentCard = operator()();
-            std::cout << "Отримано карту: " << currentCard << std::endl;
+            Card currentCard = operator()();
 
-            if (previousCard == 0 || isCardHigher(currentCard, previousCard)) {
-                stack.push_back(currentCard);
+            if (previousCard < currentCard) {
+                stacks.back().push_back(currentCard);
                 previousCard = currentCard;
             } else {
-                // Вивести та очистити стопку
-                std::cout << "Карти в стопці: ";
-                for (int card : stack) {
-                    std::cout << card << " ";
-                }
-                std::cout << std::endl;
-                stack.clear();
-                // Додатковий вивід для розділення стопок
-                std::cout << "----------" << std::endl;
-
-                // Додати поточну карту до нової стопки
-                stack.push_back(currentCard);
+                // Почати нову стопку
+                stacks.push_back({currentCard});
                 previousCard = currentCard;
             }
         }
-
-        // Вивести останню стопку карт
-        std::cout << "Остання стопка: ";
-        for (int card : stack) {
-            std::cout << card << " ";
-        }
-        std::cout << std::endl;
     }
 
 private:
     int numSuits_;
-    std::vector<int> deck_;
+    std::vector<Card> deck_;
     int currentCardIndex_;
 
     void shuffleDeck() {
@@ -88,7 +78,51 @@ int main() {
     std::cin >> numCards;
 
     CardDeck deck(numSuits);
-    deck.playGame(numCards);
+    std::vector<std::vector<Card>> stacks = {{}};  // Починаємо з однієї порожньої стопки
+
+    deck.playGame(numCards, stacks);
+
+    // Знайдемо % стопок з різною довжиною
+    std::map<int, int> stackLengthCounts;
+    for (const std::vector<Card>& stack : stacks) {
+        int stackLength = stack.size();
+        stackLengthCounts[stackLength]++;
+    }
+
+    int totalStacks = stacks.size();
+
+    // Знайдемо довжину, яка зустрічалась найчастіше
+    int mostFrequentLength = 0;
+    int maxCount = 0;
+
+    // Знайдемо середню довжину та медіану стопок
+    double totalLength = 0.0;
+    std::vector<int> stackLengths;
+    for (const auto& pair : stackLengthCounts) {
+        int length = pair.first;
+        int count = pair.second;
+
+        if (count > maxCount) {
+            maxCount = count;
+            mostFrequentLength = length;
+        }
+
+        totalLength += length * count;
+        for (int i = 0; i < count; ++i) {
+            stackLengths.push_back(length);
+        }
+    }
+
+    double averageLength = totalLength / totalStacks;
+
+    std::sort(stackLengths.begin(), stackLengths.end());
+    double medianLength = (totalStacks % 2 == 0)
+        ? (stackLengths[totalStacks / 2 - 1] + stackLengths[totalStacks / 2]) / 2.0
+        : stackLengths[totalStacks / 2];
+
+    std::cout << "Найчастіше зустрічалася довжина стопок: " << mostFrequentLength << std::endl;
+    std::cout << "Середня довжина стопок: " << averageLength << std::endl;
+    std::cout << "Медіанна довжина стопок: " << medianLength << std::endl;
 
     return 0;
 }
