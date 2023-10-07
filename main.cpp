@@ -49,7 +49,7 @@ public:
                 }
                 std::cout << std::endl;
                 stack.clear();
-
+                
                 // Додатковий вивід для розділення стопок
                 std::cout << "----------" << std::endl;
 
