@@ -1,3 +1,4 @@
+// Compiler: Microsoft Visual C++ (MSVC)
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -5,7 +6,6 @@
 #include <cstdlib>
 #include <random>
 #include <map>
-#include <compare>
 
 class Card {
 public:
@@ -48,9 +48,10 @@ public:
             if (previousCard < currentCard) {
                 stacks.back().push_back(currentCard);
                 previousCard = currentCard;
-            } else {
+            }
+            else {
                 // Почати нову стопку
-                stacks.push_back({currentCard});
+                stacks.push_back({ currentCard });
                 previousCard = currentCard;
             }
         }
@@ -71,14 +72,44 @@ int main() {
     int numSuits;
     int numCards;
 
-    std::cout << "Введіть кількість мастей: ";
-    std::cin >> numSuits;
+    bool didReceiveCorrectInput = false;
 
-    std::cout << "Введіть кількість карт для роздачі: ";
-    std::cin >> numCards;
+    while (!didReceiveCorrectInput) {
+        try {
+            std::cout << "Enter number of  suits: ";
+            std::cin >> numSuits;
+            if (std::cin.fail()) {
+                throw std::invalid_argument("Invalid input for # of suits");
+            }
+            if (numSuits <= 0)
+                throw std::out_of_range("Invalid input for # of suits: it has to be greater then 0");
+
+            std::cout << "Enter number of cards to deal: ";
+            std::cin >> numCards;
+            if (std::cin.fail()) {
+                throw std::invalid_argument("Invalid input for # of cards to deal");
+            }
+            if (numCards <= 0)
+                throw std::out_of_range("Invalid input for # of cards to deal: it has to be greater then 0");
+            didReceiveCorrectInput = true;
+
+        }
+        catch (std::exception& error)
+        {
+            std::cout << "There is an error in input: " << error.what() << ". Please, repeat input, # of suits and # of cards to deal" << std::endl;
+            std::cout << "have to be integers greater then 0" << std::endl;
+
+            // очищуємо буфер вводу
+            while (std::cin.fail()) {
+                std::cin.clear();
+                std::cin.ignore(1000, '\n');
+            }
+        }
+
+    }
 
     CardDeck deck(numSuits);
-    std::vector<std::vector<Card>> stacks = {{}};  // Починаємо з однієї порожньої стопки
+    std::vector<std::vector<Card>> stacks = { {} };  // Починаємо з однієї порожньої стопки
 
     deck.playGame(numCards, stacks);
 
@@ -119,10 +150,13 @@ int main() {
     double medianLength = (totalStacks % 2 == 0)
         ? (stackLengths[totalStacks / 2 - 1] + stackLengths[totalStacks / 2]) / 2.0
         : stackLengths[totalStacks / 2];
-
-    std::cout << "Найчастіше зустрічалася довжина стопок: " << mostFrequentLength << std::endl;
-    std::cout << "Середня довжина стопок: " << averageLength << std::endl;
-    std::cout << "Медіанна довжина стопок: " << medianLength << std::endl;
+    std::cout << "1. Stack length frequency statistic:" << std::endl;
+    for (int i = 1; i <= numCards; i++)
+        if (stackLengthCounts[i] > 0)
+            std::cout << "\t Length " << i << " : " << (double)stackLengthCounts[i] / totalStacks * 100 << std::endl;
+    std::cout << "2. The most frequent length of stack: " << mostFrequentLength << std::endl;
+    std::cout << "3. Average length of stack: " << averageLength << std::endl;
+    std::cout << "4. Median length of stack: " << medianLength << std::endl;
 
     return 0;
 }
